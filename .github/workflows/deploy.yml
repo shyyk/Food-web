@@ -1,0 +1,34 @@
+name: Deploy Food Web to EC2   # Friendly workflow name
+
+# Run workflow when you push to main branch
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest   # GitHub runner uses Ubuntu
+
+    steps:
+    # Step 1: Pull code from GitHub
+    - name: Pull code from GitHub
+      uses: actions/checkout@v3
+
+    # Step 2: Load SSH key
+    - name: Connect to EC2 via SSH
+      uses: webfactory/ssh-agent@v0.8.1
+      with:
+        ssh-private-key: ${{ secrets.ACTION_KEY }}
+
+    # Step 3: Deploy files to EC2
+    - name: Upload website to EC2
+      run: |
+        # Delete old files on EC2
+        ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} 'sudo rm -rf /var/www/html/*'
+
+        # Copy all files from repo to EC2
+        scp -o StrictHostKeyChecking=no -r * ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/html/
+
+        # Set proper permissions so Apache can serve the website
+        ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} 'sudo chown -R www-data:www-data /var/www/html && sudo chmod -R 755 /var/www/html'
