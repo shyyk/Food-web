@@ -1,6 +1,5 @@
-name: Deploy Food Web to EC2   # Friendly workflow name
+name: Deploy Website to EC2
 
-# Run workflow when you push to main branch
 on:
   push:
     branches:
@@ -8,27 +7,28 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest   # GitHub runner uses Ubuntu
+    runs-on: ubuntu-latest
 
     steps:
     # Step 1: Pull code from GitHub
-    - name: Pull code from GitHub
+    - name: Checkout code
       uses: actions/checkout@v3
 
-    # Step 2: Load SSH key
-    - name: Connect to EC2 via SSH
-      uses: webfactory/ssh-agent@v0.9.0
-      with:
-        ssh-private-key: ${{ secrets.ACTION_KEY }}
-
-    # Step 3: Deploy files to EC2
-    - name: Upload website to EC2
+    # Step 2: Save SSH key on runner
+    - name: Setup SSH key
       run: |
-        # Delete old files on EC2
-        ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} 'sudo rm -rf /var/www/html/*'
+        mkdir -p ~/.ssh
+        echo "${{ secrets.ACTION_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
 
-        # Copy all files from repo to EC2
-        scp -o StrictHostKeyChecking=no -r * ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/html/
+    # Step 3: Delete old files and copy new ones
+    - name: Deploy files to EC2
+      run: |
+        # Clear old files
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} 'sudo rm -rf /var/www/html/*'
 
-        # Set proper permissions so Apache can serve the website
-        ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} 'sudo chown -R www-data:www-data /var/www/html && sudo chmod -R 755 /var/www/html'
+        # Copy updated files
+        scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r * ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/html/
+
+        # Fix file permissions
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} 'sudo chown -R www-data:www-data /var/www/html && sudo chmod -R 755 /var/www/html'
