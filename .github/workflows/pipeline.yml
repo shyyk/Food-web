@@ -23,4 +23,3 @@ jobs:
       - name: Deploy to EC2
         run: |
           rsync -avz --delete ./ "${{ secrets.EC2_USER }}"@"${{ secrets.EC2_HOST }}":/var/www/html/
-
