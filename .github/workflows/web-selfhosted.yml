@@ -1,9 +1,7 @@
 name: Deploy Website to Local Server
 
 on:
-  push:
-    branches:
-      - master
+  workflow_dispatch:
 
 jobs:
   deploy:
