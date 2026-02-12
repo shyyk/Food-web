@@ -1,0 +1,30 @@
+name: Deploy Website to Local Server
+
+# Trigger pipeline on push to master branch
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      # Step 1: Checkout your code
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Step 2: Debug info (optional but good)
+      - name: Check Runner User and Path
+        run: |
+          whoami
+          echo "HOME=$HOME"
+          pwd
+
+      # Step 3: Deploy website to /var/www/html/grilli
+      - name: Deploy Website
+        run: |
+          echo "Starting Deployment..."
+          sudo rsync -av --delete ./ /var/www/html/grilli/
+          echo "Deployment Completed Successfully"
